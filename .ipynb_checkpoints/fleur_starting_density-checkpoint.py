@@ -1332,3 +1332,185 @@ def oxides_charge3(inp_init ,fleur = load_code(150) , gridsize = 20 ):
 
         
     return node_list
+
+
+def oxides_charge4(inp_init ,fleur = load_code(150) , gridsize = 20 ):
+    
+    
+    fleurmode = FleurinpModifier(inp_init)
+    dict_change = { 
+    'itmax' : 1 }
+
+    fleurmode.set_inpchanges(dict_change)
+    inp = fleurmode.freeze()
+    dic = inp.inp_dict
+
+    node_list = []
+    
+
+
+    options = {'resources' : {"num_machines": 1, "num_mpiprocs_per_machine" : 2},
+               'queue_name' : 'th1-2020-32',
+               'withmpi' : True,
+               'max_wallclock_seconds' : 600}
+
+    O_occ = 2
+    X_occ = 0.5
+
+    
+    
+    
+    
+    for species in dic['atomSpecies']:
+        
+        if species['name'] != 'Oxygen (O)':
+            
+            X_name = species['name']
+            
+          #  X_orb1 = species['electronConfig']['valenceConfig'][-1]
+            
+            X_orb2 = species['electronConfig']['valenceConfig'][-3]
+            
+            
+            
+    for i in range(gridsize):
+    
+        fm = FleurinpModifier(inp)
+
+        charge = 1/20
+    
+        changes = []
+    
+
+    
+            
+    
+        #print(charge , Mg_occ , O_occ)
+            
+        changes.append({'state': '(2p1/2)' , 'spinup': O_occ/3 , 'spindown' : O_occ/3 })
+        changes.append({'state': '(2p3/2)',
+         'spinUp': O_occ * 2 / 3 ,
+         'spinDown': O_occ * 2 / 3 })
+     
+        fm.set_species('Oxygen (O)', { 'electronconfig': { 'stateoccupation': changes}})
+    
+    
+        changes = []
+        #changes.append({'state': X_orb1, 'spinup': 0 , 'spindown' : 0 })
+        changes.append({'state': X_orb2, 'spinup': X_occ , 'spindown' : X_occ })
+#    changes.append({'state': '(3p1/2)', 'spinUp': 0.0, 'spinDown': 0.0})
+            
+        fm.set_species(X_name, { 'electronconfig': { 'stateoccupation': changes}})
+        
+        
+                   
+        mod_inp = fm.freeze()
+        inputs = FleurCalculation.get_builder()
+        inputs.code = fleur
+        inputs.fleurinpdata = mod_inp
+        inputs.metadata.options  = options 
+        
+        
+        fleur_proc_node = submit(FleurCalculation, **inputs)
+    
+        print('started fleur calc with pk:' , fleur_proc_node.pk)
+    
+    
+        node_list.append(fleur_proc_node) 
+            
+        O_occ += charge
+        X_occ -= charge/2        
+
+        
+    return node_list
+
+
+def oxides_charge5(inp_init ,fleur = load_code(150) , gridsize = 20 ):
+    
+    
+    fleurmode = FleurinpModifier(inp_init)
+    dict_change = { 
+    'itmax' : 1 }
+
+    fleurmode.set_inpchanges(dict_change)
+    inp = fleurmode.freeze()
+    dic = inp.inp_dict
+
+    node_list = []
+    
+
+
+    options = {'resources' : {"num_machines": 1, "num_mpiprocs_per_machine" : 2},
+               'queue_name' : 'th1-2020-32',
+               'withmpi' : True,
+               'max_wallclock_seconds' : 600}
+
+    O_occ = 2
+    X_occ = 1
+
+    
+    
+    
+    
+    for species in dic['atomSpecies']:
+        
+        if species['name'] != 'Oxygen (O)':
+            
+            X_name = species['name']
+            
+          #  X_orb1 = species['electronConfig']['valenceConfig'][-1]
+            
+            X_orb2 = species['electronConfig']['valenceConfig'][-1]
+            
+            
+            
+    for i in range(gridsize):
+    
+        fm = FleurinpModifier(inp)
+
+        charge = 1/20
+    
+        changes = []
+    
+
+    
+            
+    
+        #print(charge , Mg_occ , O_occ)
+            
+        changes.append({'state': '(2p1/2)' , 'spinup': O_occ/3 , 'spindown' : O_occ/3 })
+        changes.append({'state': '(2p3/2)',
+         'spinUp': O_occ * 2 / 3 ,
+         'spinDown': O_occ * 2 / 3 })
+     
+        fm.set_species('Oxygen (O)', { 'electronconfig': { 'stateoccupation': changes}})
+    
+    
+        changes = []
+        #changes.append({'state': X_orb1, 'spinup': 0 , 'spindown' : 0 })
+        changes.append({'state': X_orb2, 'spinup': X_occ , 'spindown' : X_occ })
+#    changes.append({'state': '(3p1/2)', 'spinUp': 0.0, 'spinDown': 0.0})
+            
+        fm.set_species(X_name, { 'electronconfig': { 'stateoccupation': changes}})
+        
+        
+                   
+        mod_inp = fm.freeze()
+        inputs = FleurCalculation.get_builder()
+        inputs.code = fleur
+        inputs.fleurinpdata = mod_inp
+        inputs.metadata.options  = options 
+        
+        
+        fleur_proc_node = submit(FleurCalculation, **inputs)
+    
+        print('started fleur calc with pk:' , fleur_proc_node.pk)
+    
+    
+        node_list.append(fleur_proc_node) 
+            
+        O_occ += charge *2 /3
+        X_occ -= charge        
+
+        
+    return node_list
