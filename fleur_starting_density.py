@@ -1583,7 +1583,9 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
                     
                     X_occ_list.append( state['spinUp'] )
                 
-                if len(state_list) == 2:
+                print(state_list, len(state_list))
+                
+                if len(state_list) == 1:
                     
                     X_orb.append(state_list[0])
                     
@@ -1595,7 +1597,7 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
                    
                 
                     
-                if len(state_list) == 2:
+                elif len(state_list) == 2:
                     
                     X_orb.append(state_list[0])
                     X_orb.append(state_list[1])
@@ -1695,6 +1697,7 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
             raise ValueError('Error: Cant match filled orbitals with schema')
     
     
+    print(ratio , X_orb)
     
     for i in range(gridsize):
     
@@ -1706,7 +1709,7 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
     
 
     
-            
+        print(X_occ, O_occ)
     
         #print(charge , Mg_occ , O_occ)
             
@@ -1721,15 +1724,18 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
         changes = []
         #changes.append({'state': X_orb1, 'spinup': 0 , 'spindown' : 0 })
         counter = 0
+        
+        exist1 = exist.copy()
+        
         for state in X_orb:
             
-            exist.append({'state': state, 'spinup': X_occ * ratio[counter], 'spindown' : X_occ * ratio[counter]})
+            exist1.append({'state': state, 'spinup': X_occ * ratio[counter], 'spindown' : X_occ * ratio[counter]})
             counter += 1
 #    changes.append({'state': '(3p1/2)', 'spinUp': 0.0, 'spinDown': 0.0})
             
-        fm.set_species(X_name, { 'electronconfig': { 'stateoccupation': exist}})
+        fm.set_species(X_name, { 'electronconfig': { 'stateoccupation': exist1}})
         
-        
+        print(exist1)
                    
         mod_inp = fm.freeze()
         inputs = FleurCalculation.get_builder()
@@ -1745,7 +1751,7 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
     
         node_list.append(fleur_proc_node) 
             
-        X_occ -= charge        
-
+        X_occ -= charge        #something doesnt work with the charge transfer
+        O_occ += charge * X_number /O_number
         
     return node_list
