@@ -1755,3 +1755,248 @@ def oxides_all(inp_init ,fleur = load_code(150) , gridsize = 20 , options = {'re
         O_occ += charge * X_number /O_number
         
     return node_list
+
+def oxides_all1(inp_init ,fleur = load_code(151178) , charge = 1/20 , options = {'resources' : {"num_machines": 1, "num_mpiprocs_per_machine" : 2},
+               'queue_name' : 'th1-2020-32',
+               'withmpi' : True,
+               'max_wallclock_seconds' : 600}):
+    
+    
+    if inp_init.inp_dict['calculationSetup']['magnetism']['jspins'] == 2:
+        
+        raise ValueError('magnetism detected , calculation rejected')
+        
+        
+        
+    
+    fleurmode = FleurinpModifier(inp_init)
+    dict_change = { 
+    'itmax' : 1 }
+
+    fleurmode.set_inpchanges(dict_change)
+    inp = fleurmode.freeze()
+    dic = inp.inp_dict
+
+    node_list = []
+    
+    
+        
+    for species in dic['atomGroups']:
+        
+        if species['species'] == 'Oxygen (O)':
+            
+            O_number = len(species['relPos'])
+            
+        else: 
+            
+            X_number = len(species['relPos'])
+
+    
+    O_occ = 2
+    X_occ = 0
+
+    state_list = []
+    
+    X_orb = []
+    
+    half_full = False
+    
+    exist = []
+    
+    ratio = []
+    
+    X_occ_list = []
+    
+    for species in dic['atomSpecies']:
+        
+        if species['name'] != 'Oxygen (O)':
+            
+            X_name = species['name']
+            
+            if 'stateOccupation' in species['electronConfig']:
+                
+                half_full = True
+                
+                for state in species['electronConfig']['stateOccupation']:
+                    
+                    state_list.append( state['state'] )
+                    
+                    X_occ_list.append( state['spinUp'] )
+                
+                print(state_list, len(state_list))
+                
+                if len(state_list) == 1:
+                    
+                    X_orb.append(state_list[0])
+                    
+                    
+                    X_occ += X_occ_list[0]
+                    
+                    
+                    ratio.append(X_occ_list[0]/X_occ)
+                   
+                
+                    
+                elif len(state_list) == 2:
+                    
+                    X_orb.append(state_list[0])
+                    X_orb.append(state_list[1])
+                    
+                    X_occ += X_occ_list[0]
+                    X_occ += X_occ_list[1]
+                    
+                    ratio.append(X_occ_list[0]/X_occ)
+                    ratio.append(X_occ_list[1]/X_occ)
+                    
+                elif len(state_list) == 3:
+                    
+                    X_orb.append(state_list[1])
+                    X_orb.append(state_list[2])
+                    
+                    X_occ += X_occ_list[1]
+                    X_occ += X_occ_list[2]
+                    
+                    ratio.append(X_occ_list[1]/X_occ)
+                    ratio.append (X_occ_list[2]/X_occ)
+                    
+                    exist.append( {'state': state_list[0], 'spinUp': X_occ_list[0], 'spinDown': X_occ_list[0]} )
+                    
+                elif len(state_list) == 4:
+                    
+                    X_orb.append(state_list[2])
+                    X_orb.append(state_list[3])
+                    
+                    X_occ += X_occ_list[2]
+                    X_occ += X_occ_list[3]
+                    
+                    ratio.append( X_occ_list[2]/X_occ )
+                    ratio.append( X_occ_list[3]/X_occ)
+                    
+                    
+                    exist.append( {'state': state_list[0], 'spinUp': X_occ_list[0], 'spinDown': X_occ_list[0]} )
+                    exist.append( {'state': state_list[1], 'spinUp': X_occ_list[1], 'spinDown': X_occ_list[1]} )
+                    
+                else:
+                    
+                    raise ValueError('Error: could not match orbital number for X, with schema')
+                    
+                    
+                    
+            
+            else:
+                
+                if 's' in species['electronConfig']['valenceConfig'][-1]:
+                    
+                    X_orb.append(species['electronConfig']['valenceConfig'][-1])
+                    
+                    ratio.append(1)
+                    
+                else: 
+                    
+                    X_orb.append(species['electronConfig']['valenceConfig'][-1])
+                    X_orb.append(species['electronConfig']['valenceConfig'][-2])
+                    
+                    
+                   
+    
+                    
+                    
+  
+        
+        
+    if not half_full:
+        
+
+            
+        if 's' in X_orb[0]:
+
+            X_occ += 1
+
+        elif 'd' in X_orb[0]:
+
+            X_occ += 5
+            
+            ratio.append( 2/5 )
+            ratio.append( 3/5 )
+
+        elif 'p' in X_orb[0]:
+
+            X_occ += 3
+            ratio.append( 1/3 )
+            ratio.append( 2/3 )
+            
+        elif 'f' in X_orb[0]:
+
+            X_occ += 7 
+
+            ratio.append( 3/7 )
+            ratio.append( 4/7 )
+            
+        else:
+            
+            raise ValueError('Error: Cant match filled orbitals with schema')
+    
+    
+    print(ratio , X_orb)
+    
+    while X_occ > 0:
+    
+        fm = FleurinpModifier(inp)
+
+        
+    
+        changes = []
+    
+
+    
+        print(X_occ, O_occ)
+    
+        #print(charge , Mg_occ , O_occ)
+            
+        changes.append({'state': '(2p1/2)' , 'spinup': O_occ/3 , 'spindown' : O_occ/3 })
+        changes.append({'state': '(2p3/2)',
+         'spinUp': O_occ * 2 / 3 ,
+         'spinDown': O_occ * 2 / 3 })
+     
+        fm.set_species('Oxygen (O)', { 'electronconfig': { 'stateoccupation': changes}})
+    
+    
+        changes = []
+        #changes.append({'state': X_orb1, 'spinup': 0 , 'spindown' : 0 })
+        counter = 0
+        
+        exist1 = exist.copy()
+        
+        for state in X_orb:
+            
+            exist1.append({'state': state, 'spinup': X_occ * ratio[counter], 'spindown' : X_occ * ratio[counter]})
+            counter += 1
+#    changes.append({'state': '(3p1/2)', 'spinUp': 0.0, 'spinDown': 0.0})
+            
+        fm.set_species(X_name, { 'electronconfig': { 'stateoccupation': exist1}})
+        
+        print(exist1)
+                   
+        mod_inp = fm.freeze()
+        inputs = FleurCalculation.get_builder()
+        inputs.code = fleur
+        inputs.fleurinpdata = mod_inp
+        inputs.metadata.options  = options 
+        
+        
+        fleur_proc_node = submit(FleurCalculation, **inputs)
+    
+        print('started fleur calc with pk:' , fleur_proc_node.pk)
+        
+        fleur_proc_node.set_extra( 'element' , X_name )
+        fleur_proc_node.set_extra( 'type' , 'oxides')
+        fleur_proc_node.set_extra( 'calcType' , 'Oxygen charge transfer' )
+        fleur_proc_node.set_extra( 'transfered charge' , O_occ - 2 ) 
+        fleur_proc_node.set_extra( 'oxide struct' , 'X' + str(X_number) + 'O' + str(O_number) )
+    
+        node_list.append(fleur_proc_node) 
+            
+        X_occ -= charge        #something doesnt work with the charge transfer
+        O_occ += charge * X_number /O_number
+        
+    return node_list
